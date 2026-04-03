@@ -21,7 +21,7 @@ The main goal of this project is to demonstrate:
 
 # Architecture
 
-![Architecture Diagram](images/001-project-diagram.png)
+![Architecture Diagram](images/001-our-project-diagram.png)
 
 # Request Flow
   - User Request
