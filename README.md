@@ -69,113 +69,13 @@ The main goal of this project is to demonstrate:
 
 ## AWS Lambda Image Resizer (Python)
 
-```python
-import boto3
-from PIL import Image
-import io
-import base64
-import json
+To make our application work we have to update python code
+There are new python files which will be usefull in this case
 
-# Create an S3 client
-s3 = boto3.client("s3")
+## AWS Click Count (Python)
 
-# Name of the S3 bucket
-BUCKET = "images-resizer-bucket-own"
+Now we need to create a new Lambda function for click count algorithm. We need to do the same actions like with Lambda Image Resizer function from previous part but here we don't have to add our pillow, because this function doesn't use external libraries. 
 
-def lambda_handler(event, context):
+## AWS SQS
 
-    # Detect where parameters come from
-    if "queryStringParameters" in event and event["queryStringParameters"]:
-        params = event["queryStringParameters"]
-    else:
-        params = event
 
-    # Validate parameters
-    if "image" not in params or "width" not in params:
-        return {
-            "statusCode": 400,
-            "headers": {"Content-Type": "application/json"},
-            "body": json.dumps({
-                "error": "Missing parameters. Required: image, width"
-            })
-        }
-
-    key = params["image"]
-    width = int(params["width"])
-
-    # Get image from S3
-    obj = s3.get_object(Bucket=BUCKET, Key=key)
-    image_bytes = obj["Body"].read()
-
-    # Open image
-    image = Image.open(io.BytesIO(image_bytes))
-
-    # Keep aspect ratio
-    ratio = width / image.width
-    height = int(image.height * ratio)
-
-    # Resize image
-    resized = image.resize((width, height))
-
-    # Save to memory
-    buffer = io.BytesIO()
-    resized.save(buffer, "JPEG")
-
-    # Return image
-    return {
-        "statusCode": 200,
-        "headers": {
-            "Content-Type": "image/jpeg"
-        },
-        "body": base64.b64encode(buffer.getvalue()).decode("utf-8"),
-        "isBase64Encoded": True
-    }
-```
-## 📌 What this code does
-
-This AWS Lambda function resizes an image stored in S3 based on a requested width and returns it as a JPEG.
-
----
-
-## ⚙️ Key parts explained
-
-### 🔹 `boto3.client("s3")`
-Used to access AWS S3.  
-Without it, the function cannot retrieve images.
-
----
-
-### 🔹 `queryStringParameters` handling
-Allows the function to work both via API Gateway and direct invocation.
-
----
-
-### 🔹 Aspect ratio logic
-
-```python
-ratio = width / image.width
-height = int(image.height * ratio)
-```
-Keeps the image proportions correct.  
-Without this, the image would be distorted.
-
----
-
-### 🔹 `Image.open(io.BytesIO(...))`
-
-Opens the image directly from memory instead of saving to disk.  
-✔ Important for AWS Lambda (no filesystem dependency)
-
----
-
-### 🔹 `base64.b64encode(...)`
-
-Required to return binary data (image) via API Gateway.  
-Without this, the image would break in the response.
-
----
-
-### 🔹 `isBase64Encoded = True`
-
-Tells API Gateway the response is encoded.  
-Without it, the client won’t decode the image properly.
