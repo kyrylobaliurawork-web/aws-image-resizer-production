@@ -100,37 +100,43 @@ In previos part we've already created API and connect it ot the lambda function(
 
 ## IAM Roles
 So now we have to update our IAM roles for both Lambda function:
- - for Image Resizer function we have to add sqs:SendMessage to send message to our SQS queue when uesr make request to resize his photo.So now it will look like this(like always we have to comply the least privilege principle):
+ - for Image Resizer function we have to add sqs:SendMessage to send message to our SQS queue when uesr make request to resize his photo and the ability to check if the photo exist in the bucket s3:ListBucket.So now it will look like this(like always we have to comply the least privilege principle):
 ```json
 {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": "logs:CreateLogGroup",
-            "Resource": "arn:aws:logs:us-east-1:806116531925:*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
-            ],
-            "Resource": [
-                "arn:aws:logs:us-east-1:806116531925:log-group:/aws/lambda/resize-function:*"
-            ]
-        },
-        {
-            "Effect": "Allow",
-            "Action": "s3:GetObject",
-            "Resource": "arn:aws:s3:::images-resizer-bucket-own/*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": "sqs:SendMessage",
-            "Resource": "arn:aws:sqs:us-east-1:806116531925:click-queue"
-        }
-    ]
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Effect": "Allow",
+			"Action": "logs:CreateLogGroup",
+			"Resource": "arn:aws:logs:us-east-1:806116531925:*"
+		},
+		{
+			"Effect": "Allow",
+			"Action": [
+				"logs:CreateLogStream",
+				"logs:PutLogEvents"
+			],
+			"Resource": [
+				"arn:aws:logs:us-east-1:806116531925:log-group:/aws/lambda/resize-function:*"
+			]
+		},
+		{
+			"Effect": "Allow",
+			"Action": [
+				"s3:GetObject",
+				"s3:ListBucket"
+			],
+			"Resource": [
+				"arn:aws:s3:::images-resizer-bucket-own",
+				"arn:aws:s3:::images-resizer-bucket-own/*"
+			]
+		},
+		{
+			"Effect": "Allow",
+			"Action": "sqs:SendMessage",
+			"Resource": "arn:aws:sqs:us-east-1:806116531925:click-queue"
+		}
+	]
 }
 ```
 And for Click Count function we have to add some access for sqs actions because without it we could not even add the SQS trigger to our Lambda function:
