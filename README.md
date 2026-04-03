@@ -253,13 +253,13 @@ CloudFront can be used to cache and deliver resized images efficiently via CDN.
 
 ## Route 53
 
-# Using a Custom Domain with Your API
+### Using a Custom Domain with Your API
 
 This section explains how to buy a domain via Route 53 and connect it to your API Gateway.
 
 ---
 
-# 1. Buy a Domain
+### 1. Buy a Domain
 
 1. Go to **Route 53 → Domains → Register Domain**.  
 2. Choose your domain name (e.g., `myportfolio.com`) and follow the purchase process.  
@@ -270,7 +270,7 @@ This section explains how to buy a domain via Route 53 and connect it to your AP
 
 ---
 
-# 2. Create a Hosted Zone
+### 2. Create a Hosted Zone
 
 1. Navigate to **Route 53 → Hosted Zones → Create Hosted Zone**.  
 2. Enter your domain name and select the type **Public Hosted Zone**.  
@@ -278,7 +278,7 @@ This section explains how to buy a domain via Route 53 and connect it to your AP
 
 ---
 
-# 3. Connect Domain to API Gateway
+### 3. Connect Domain to API Gateway
 
 1. In **API Gateway**, create a **Custom Domain Name**.  
 2. Request or select an SSL certificate via **AWS Certificate Manager (ACM)**.  
