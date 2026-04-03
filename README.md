@@ -253,9 +253,40 @@ CloudFront can be used to cache and deliver resized images efficiently via CDN.
 
 ## Route 53
 
-_To be implemented._  
-Route 53 can be used to configure a custom domain for your application.
+# Using a Custom Domain with Your API
 
+This section explains how to buy a domain via Route 53 and connect it to your API Gateway.
+
+---
+
+# 1. Buy a Domain
+
+1. Go to **Route 53 → Domains → Register Domain**.  
+2. Choose your domain name (e.g., `myportfolio.com`) and follow the purchase process.  
+
+![Domain purchase](images/013-DNS.png)
+
+> **Note:** Domain registration is annual. You will be billed every year unless you cancel or transfer the domain.
+
+---
+
+# 2. Create a Hosted Zone
+
+1. Navigate to **Route 53 → Hosted Zones → Create Hosted Zone**.  
+2. Enter your domain name and select the type **Public Hosted Zone**.  
+3. Optionally, add a description or tags for organization.  
+
+---
+
+# 3. Connect Domain to API Gateway
+
+1. In **API Gateway**, create a **Custom Domain Name**.  
+2. Request or select an SSL certificate via **AWS Certificate Manager (ACM)**.  
+3. API Gateway will generate an **endpoint target (CloudFront distribution)**.  
+4. Go back to your **Route 53 hosted zone**, and add an **A/ALIAS record** pointing to the CloudFront distribution.  
+
+> After this, requests to `https://myportfolio.com` (or a subdomain like `api.myportfolio.com`) will route to your Lambda function.
+> 
 ---
 
 ## Result
