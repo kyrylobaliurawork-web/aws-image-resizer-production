@@ -69,38 +69,70 @@ The main goal of this project is to demonstrate:
 
 ## AWS Lambda Image Resizer (Python)
 
-To make our application work we have to update python code
-There are new python files which will be usefull in this case
+To make our application work, we need to update the Python code.  
+New Python files have been added and will be useful for implementing the image resizing functionality.
+
+---
 
 ## AWS Click Count (Python)
 
-Now we need to create a new Lambda function for click count algorithm. We need to do the same actions like with Lambda Image Resizer function from previous part but here we don't have to add our pillow, because this function doesn't use external libraries. 
+Now we need to create a new Lambda function for the click count algorithm.  
+We should follow the same steps as for the Image Resizer Lambda function from the previous section.  
+
+However, in this case, we do not need to include external libraries like Pillow, since this function does not require them.
+
+---
 
 ## AWS SQS
-Now we need to create SQS queue for photo opens counting and to queue or requests if we're going to work with many people
+
+Next, we create an SQS queue to handle photo open events and to queue requests when the system is under load.
 
 ![SQS create](images/002-SQS-create.png)
 
-# With these parameters. 
-  - We need to make visibility timeout > processing image time
-  - To make less requests and save some money set Receive message wait time about 10-20
-  - 2 days retention period will be more than enought for click counts and max size 256 KiB is the same
+### Configuration
+
+- Visibility timeout should be greater than the image processing time  
+- Set **Receive message wait time** to 10–20 seconds to enable long polling and reduce costs  
+- A **2-day retention period** is sufficient for click tracking  
+- Set **maximum message size** to 256 KiB  
+
 ![SQS parameters](images/003-sqs-params.png)
 
-# Then copy the arn of sqs queue
+---
+
+### Dead Letter Queue (DLQ)
+
+Copy the ARN of your SQS queue:
+
 ![SQS arn copy](images/004-arn-copy.png)
 
-# And add the Dead Letter queue, so that after 3 unsuccessful attempts the message goes to the DLQ
-![SQS DLQ](images/005-dead-letter-queue.png) 
+Then configure a Dead Letter Queue (DLQ), so that after 3 failed processing attempts, the message is moved to the DLQ.
+
+![SQS DLQ](images/005-dead-letter-queue.png)
+
+---
 
 ## API Gateway
-In previos part we've already created API and connect it ot the lambda function(Image Resizer function)
-![API exist](images/006-api-exist.png)
+
+In the previous section, we already created an API and connected it to the Image Resizer Lambda function.
+
+![API exist](images/006-api-exist.png)  
 ![API trigger exist](images/007-api-trigger-exist.png)
 
+---
+
 ## IAM Roles
-So now we have to update our IAM roles for both Lambda function:
- - for Image Resizer function we have to add sqs:SendMessage to send message to our SQS queue when uesr make request to resize his photo and the ability to check if the photo exist in the bucket s3:ListBucket.So now it will look like this(like always we have to comply the least privilege principle):
+
+Now we need to update IAM roles for both Lambda functions.
+
+### Image Resizer Function
+
+We need to:
+- Send messages to SQS → `sqs:SendMessage`  
+- Check if an image exists in S3 → `s3:ListBucket`  
+
+Following the **principle of least privilege**, the policy looks like this:
+
 ```json
 {
 	"Version": "2012-10-17",
@@ -139,50 +171,115 @@ So now we have to update our IAM roles for both Lambda function:
 	]
 }
 ```
-And for Click Count function we have to add some access for sqs actions because without it we could not even add the SQS trigger to our Lambda function:
+## Click Count Function
+
+This function requires access to SQS in order to be triggered and process messages.
+
+### IAM Policy
+
 ```json
 {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": "logs:CreateLogGroup",
-            "Resource": "arn:aws:logs:us-east-1:806116531925:*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
-            ],
-            "Resource": [
-                "arn:aws:logs:us-east-1:806116531925:log-group:/aws/lambda/resize-function:*"
-            ]
-        },
-        {
-            "Effect": "Allow",
-            "Action": "s3:GetObject",
-            "Resource": "arn:aws:s3:::images-resizer-bucket-own/*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": "sqs:SendMessage",
-            "Resource": "arn:aws:sqs:us-east-1:806116531925:click-queue"
-        }
-    ]
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Effect": "Allow",
+			"Action": "logs:CreateLogGroup",
+			"Resource": "arn:aws:logs:us-east-1:806116531925:*"
+		},
+		{
+			"Effect": "Allow",
+			"Action": [
+				"logs:CreateLogStream",
+				"logs:PutLogEvents"
+			],
+			"Resource": [
+				"arn:aws:logs:us-east-1:806116531925:log-group:/aws/lambda/click-count:*"
+			]
+		},
+		{
+			"Effect": "Allow",
+			"Action": [
+				"sqs:ReceiveMessage",
+				"sqs:DeleteMessage",
+				"sqs:GetQueueAttributes"
+			],
+			"Resource": "arn:aws:sqs:us-east-1:806116531925:click-queue"
+		},
+		{
+			"Effect": "Allow",
+			"Action": [
+				"dynamodb:UpdateItem"
+			],
+			"Resource": "arn:aws:dynamodb:us-east-1:806116531925:table/ClickCounts"
+		}
+	]
 }
 ```
 
-## SQS trigger 
-Add the sqs trigger to the Click Count function, do it the same way as with API Gateway trigger
+## SQS Trigger
+
+Add the SQS trigger to the Click Count Lambda function, just like you did with the API Gateway trigger.
+
 ![SQS trigger](images/008-sqs-trigger.png)
 
-## DynamoDB 
-So now we have to create DynamoDB table to store our counted clicks.
+---
+
+## DynamoDB
+
+Create a DynamoDB table to store click counts.
+
 ![DB Tables create](images/009-db-create.png)
 
-Table name and partion key must be the same as in our/your python code
+Make sure the **table name** and **partition key** match your Python code configuration.
+
 ![DB parameters](images/010-db-params.png)
 
-# Also we have to add some environment variables to secure our application
+---
+
+## Environment Variables
+
+Add environment variables to configure and secure your Lambda functions.
+
 ![Environment variables](images/011-lambda-variables.png)
+
+---
+
+## CloudFront
+
+_To be implemented._  
+CloudFront can be used to cache and deliver resized images efficiently via CDN.
+
+---
+
+## Route 53
+
+_To be implemented._  
+Route 53 can be used to configure a custom domain for your application.
+
+---
+
+## Result
+
+After everything is set up:
+
+- You can send a request to resize an image from your S3 bucket.
+- The image will be processed by the Lambda function.
+- Click counts will be updated in DynamoDB.
+
+![Resize request](images/100-final-result.png)  
+![Click count result](images/012-table-count-resulte.png)
+
+---
+
+## Further Actions
+
+- Build a full-featured frontend website (e.g., using React or Next.js) to provide a user interface for uploading and viewing images.  
+- Implement image upload functionality from the client-side directly to an S3 bucket (via pre-signed URLs or backend API).  
+- Connect the frontend with the backend API to trigger image processing (resize) requests.  
+- Automatically send uploaded images to the processing pipeline (SQS → Lambda → S3).  
+- Display processed (resized) images back in the UI after completion.  
+- Add authentication (e.g., JWT or Cognito) to secure API endpoints.  
+- Implement rate limiting and validation to prevent abuse.  
+- Improve error handling and logging across the system.  
+- Optimize performance (caching resized images, CDN via CloudFront).  
+- Prepare the project for production deployment (CI/CD, environment configs, monitoring).  
